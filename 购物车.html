@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Vue实现简单的购物车</title>
+	</head>
+	<body>
+		<!--购物车应用-->
+		<!--组件化按照业务逻辑分割结构和逻辑功能-->
+		<!--模块化 分割业务逻辑-->
+		
+
+		<!--模块化	分而治之-->
+		<div id="app">
+			<h2>商品详情</h2>
+			<product-details :products=products @add=add></product-details>
+			<hr /> <!--低耦合-->
+			<h2>购物车</h2>
+			<shopping-cart :cart=cart :products=products></shopping-cart>
+		</div>
+		<!--<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>-->
+		<script src="https://unpkg.com/vue/dist/vue.js"></script>
+		<script src="https://cdn.bootcss.com/vue/2.4.2/vue.min.js"></script>
+		<script type="text/javascript">
+			//商品详情
+			var child = {
+				template:`<li>
+					<h2>{{product.item_name}}</h2>
+					<div>价格:{{product.item_price}}</div>
+					<div>库存:{{product.item_inventory}}</div>
+					<button @click="$emit('add',product)">加入购物车</button>
+				</li>`,
+				props:['product'],
+			}
+			//组件 - 商品详情页
+			var productDetails = {
+				//1. v-for 最好添加key属性，提升性能
+				//2. $event 事件对象
+				template:`<ol>
+					<child-item @add="$emit('add',$event)" v-for="v in products" :product=v></child-item>
+				</ol>`,
+				props:['products'],
+				components:{
+					childItem:child
+				},
+				methods:{
+					
+				}
+			};
+			
+			//组件 - 购物车
+			var shoppingCart = {
+				template:`<ol>
+					<li v-for="v in pds">
+						<div>name: {{v.item_name}}</div>
+						<div>数量：{{v.quantity}}</div>
+					</li>
+				</ol>`,
+				props:["cart","products"],
+				data:function(){
+					//必须使用工厂模式
+					//console.log(this);//继承props数据
+					return {
+					}
+				},
+				//计算属性 computed  -- 加工
+				computed:{
+					pds:function(){
+						//购物车根据商品详情 查询结果
+						var arr_pds = this.cart.map((item)=>{
+							//console.log(item);//1. 遍历购物车
+							var productItem = this.products.find(function(product){
+								//console.log(product);//2. 遍历商品
+								//console.log(item.id,product.id);
+								return item.id == product.id;//3. 查询商品，并返回商品
+							})
+							//console.log(productItem);
+							return {
+								item_name:productItem.item_name,
+								quantity:item.quantity,
+							};//4. 将查询到的商品组成数组
+						})
+						return arr_pds;
+					}
+				}
+			};
+			
+			//vue实例
+			new Vue({
+				el:"#app",
+				data:{
+					products:[{
+		            	id:1,
+		            	item_name:"Apple iPhone X (A1903) 64GB 银色 移动联通4G手机",
+		            	item_price:7199.00,
+		            	item_inventory:10,
+		  			},{
+		          		id:2,
+		  			  	item_name:"索尼（SONY）ILCE-7M3K 全画幅微单相机标准套装（约2420万有效像素 4K视频 5轴防抖 α7M3/a7M3/A7 III）",
+		           	    item_price:15499.00,
+		               	item_inventory:5,
+		  			},{
+		          		id:3,
+		  				item_name:"Beats X 蓝牙无线 入耳式耳机 运动耳机 手机耳机 游戏耳机 带麦可通话 灰色",
+		                item_price:1058.00,
+		                item_inventory:8,
+		  			},{
+		          		id:4,
+		  				item_name:"年轻，就要对自己狠一点",
+		                item_desc:"李健著。青少专区课外阅读书籍国内外名著",
+		                item_price:20.00,
+		                item_inventory:20,
+		                item_img:'img/4.png',
+		  			}],
+		  			//2. 手动添加 -- 结果
+		  			/*cart:[{
+		  				id:3,
+		  				quantity:1
+		  			},{
+		  				id:2,
+		  				quantity:1
+		  			}]*/
+		  			cart:[{
+		  				id:2,
+		  				quantity:1
+		  			}]
+				},
+				components:{
+					productDetails:productDetails,
+					shoppingCart:shoppingCart
+				},
+				//方法 -- 实现逻辑功能
+				methods:{
+					add:function(d){
+						//1. 添加到购物车  -- 业务逻辑
+						// console.log(d);
+						//过程   -- 高内聚
+						//2.1 库存不为0
+						if (d.item_inventory) {
+							//5. 库存减少
+                            d.item_inventory--;
+							var cartItem = this.findCart(d.id);//3. 查询购物车是否存在商品
+							//购物车是否存在商品
+
+							if(cartItem){
+								//存在
+								this.increment(cartItem);//4. 商品的购物车数量增加
+							}else{
+								this.pushToCart(d.id);//4. 新增商品
+							}
+						}
+					},
+					findCart:function(id){//查看购物车内是否有商品
+						//查询购物车是否存在商品
+						var cartItem = this.cart.find(function(item){
+							return item.id === id;
+						})
+						// console.log(cartItem);
+						return cartItem;
+					},
+					pushToCart:function(id){
+						//新增商品
+						this.cart.push({
+			  				id:id,
+			  				quantity:1
+			  			})
+//						console.log(this.cart);
+					},
+					increment:function(cartItem){
+						//商品的购物车数量增加
+						cartItem.quantity++;
+					}
+				}
+			})
+		</script>
+	</body>
+</html>
